@@ -18,7 +18,6 @@ from tqdm import tqdm
 > view http://127.0.0.1:5010 and see the documentation.
 '''
 
-
 def get_proxy():
     return requests.get("http://127.0.0.1:5010/get/").json()
 
@@ -40,7 +39,7 @@ def save_code(submission_id, code):
         f.write(code)
 
 
-def fetch_code(contest_id, submission_id):
+def fetch_code(contest_id, submission_id, pre_contest_id):
 
     url = f"https://codeforces.com/contest/{contest_id}/submission/{submission_id}"
 
@@ -78,11 +77,13 @@ def fetch_code(contest_id, submission_id):
             soup = BeautifulSoup(response.content, "html.parser")
             code = soup.find(id="program-source-text")
             if code is None:
+                if pre_contest_id != contest_id:
+                    return -1
                 raise ValueError(f"Source code not found. url: {url}")
 
             code = code.text
             save_code(submission_id, code.strip())
-            break
+            return 1
 
         except Exception:
             delete_proxy(proxy)
@@ -96,10 +97,10 @@ def fetch_code(contest_id, submission_id):
                 time.sleep(5)
             else:
                 time.sleep(2)
+    return -2
 
 
 def main():
-
     for split_id in range_list:
         contest_submission_ids = []
         with open(f"required/{lang}_required_split_{split_id}.jsonl", mode="r", encoding="utf-8") as f:
@@ -111,10 +112,16 @@ def main():
                 contest_submission_ids.append((contest_id, submission_id))
 
         # crawl code from website
+        pre_contest_id = None
+        pre_status = None
         for contest_id, submission_id in tqdm(contest_submission_ids, ascii=True, desc=f"Split {split_id}"):
             if os.path.exists(os.path.join(save_code_dir, f"{submission_id}.txt")):
                 continue
-            fetch_code(contest_id=contest_id, submission_id=submission_id)
+            if pre_status == -1:
+                if contest_id == pre_contest_id:
+                    continue
+            pre_status = fetch_code(contest_id=contest_id, submission_id=submission_id, pre_contest_id = pre_contest_id)                
+            pre_contest_id = contest_id
             time.sleep(2 + random.random())
 
 
