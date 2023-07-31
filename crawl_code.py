@@ -77,7 +77,7 @@ def fetch_code(contest_id, submission_id, pre_contest_id):
             soup = BeautifulSoup(response.content, "html.parser")
             code = soup.find(id="program-source-text")
             if code is None:
-                if pre_contest_id != contest_id:
+                if pre_contest_id != contest_id and pre_contest_id != None:
                     return -1
                 raise ValueError(f"Source code not found. url: {url}")
 
