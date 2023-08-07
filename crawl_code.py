@@ -112,17 +112,23 @@ def main():
                 contest_submission_ids.append((contest_id, submission_id))
 
         # crawl code from website
+        # pre_contest_id is the id of the contest that has just been handled, otherwise is None; 
+        # vpre_status marks the statuts of the previous fetch:
+        #    -1 represents "a new contest but failed after 6-times trying"
+        #    -2 means that it is not a new contest and maybe previously correctly fetched, but now failed
+        #     1 stands for correctly fetched. 
         pre_contest_id = None
         pre_status = None
         for contest_id, submission_id in tqdm(contest_submission_ids, ascii=True, desc=f"Split {split_id}"):
             if os.path.exists(os.path.join(save_code_dir, f"{submission_id}.txt")):
                 continue
+            # if previously, it is a new contest but failed after 6-times trying, then this time if it is still a submission of the previous contest, then pass it until a new contest.  
             if pre_status == -1:
                 if contest_id == pre_contest_id:
                     continue
             pre_status = fetch_code(contest_id=contest_id, submission_id=submission_id, pre_contest_id = pre_contest_id)                
             pre_contest_id = contest_id
-            time.sleep(2)
+            time.sleep(2 + random.random())
 
 
 if __name__ == "__main__":
